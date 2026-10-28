@@ -1,454 +1,454 @@
-/**
- * ╔══════════════════════════════════════════════════════════════════╗
- * ║                                                                  ║
- * ║   ░█▀▀░█▀█░█▀▄░█▀▀░█░█   ░█▀▄░█▀▀░█░█░█▀▀                     ║
- * ║   ░█░░░█░█░█░█░█▀▀░▄▀▄   ░█░█░█▀▀░▀▄▀░▀▀█                     ║
- * ║   ░▀▀▀░▀▀▀░▀▀░░▀▀▀░▀░▀   ░▀▀░░▀▀▀░░▀░░▀▀▀                     ║
- * ║                                                                  ║
- * ║           © 2026 VayuX Devs — All Rights Reserved               ║
- * ║                                                                  ║
- * ║   discord  ──  https://discord.gg/vayuxdev                      ║
- * ║   youtube  ──  https://youtube.com/@VayuXDevs                   ║
- * ║   github   ──  https://github.com/RayExo                        ║
- * ║                                                                  ║
- * ╚══════════════════════════════════════════════════════════════════╝
- */
-
 "use client";
 
-import React from "react";
-import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { 
-  ShieldCheck, 
-  Zap, 
-  BarChart4, 
-  MessageSquare, 
-  ChevronRight, 
-  LayoutDashboard,
-  LogIn,
-  Layers,
-  Sparkles,
-  Bot,
+import { useState } from "react";
+import {
   Activity,
-  History,
-  CheckCircle2,
-  ShieldAlert,
-  Globe,
-  Terminal,
-  Cpu,
-  Users2,
-  Lock,
-  Radio,
-  Gamepad2,
-  Music4,
-  User
+  ArrowRight,
+  BadgeCheck,
+  Bell,
+  ExternalLink,
+  LogIn,
+  Menu,
+  MessageSquare,
+  ScrollText,
+  Settings,
+  Shield,
+  ShieldCheck,
+  Tags,
+  Ticket,
+  Trophy,
+  Users,
+  X,
+  Zap,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
-export default function LandingPage() {
+/* ==========================================================================
+   Configuration — replace these three values with your real ones.
+   Everything else in this file works as-is.
+   ========================================================================== */
+
+// Your Discord application's Client ID (Discord Developer Portal → OAuth2).
+// Optionally set it as NEXT_PUBLIC_DISCORD_BOT_CLIENT_ID in your .env instead.
+const DISCORD_BOT_CLIENT_ID =
+  process.env.NEXT_PUBLIC_DISCORD_BOT_CLIENT_ID ?? "";
+
+// Discord permission bitfield requested during authorization.
+// "8" = Administrator. Replace with a narrower bitfield if you prefer.
+const DISCORD_BOT_PERMISSIONS = "8";
+
+// Real documentation / support URLs. Leave empty and the navbar simply
+// renders those items in a muted, non-clickable state — no fake links.
+const DOCS_URL = "";
+const SUPPORT_URL = "";
+
+// Bot invitation / OAuth2 authorization URL with bot + applications.commands
+// scopes. The server owner picks their server and approves the permissions.
+const botInviteUrl = DISCORD_BOT_CLIENT_ID
+  ? `https://discord.com/oauth2/authorize?client_id=${DISCORD_BOT_CLIENT_ID}&permissions=${DISCORD_BOT_PERMISSIONS}&scope=bot%20applications.commands`
+  : null;
+
+if (!botInviteUrl && typeof console !== "undefined") {
+  console.warn(
+    "[VayuX] 'Add Bot' buttons are disabled: set DISCORD_BOT_CLIENT_ID in app/page.tsx."
+  );
+}
+
+/* ==========================================================================
+   Shared design tokens (scoped to this file)
+   ========================================================================== */
+
+const btnBase =
+  "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff4d4d]/60 disabled:cursor-not-allowed";
+
+const btnPrimary = `${btnBase} bg-gradient-to-r from-[#ff3b3b] via-[#d61f2b] to-[#8a0f1c] text-white shadow-[0_10px_30px_-10px_rgba(255,60,60,0.55)] hover:shadow-[0_14px_42px_-8px_rgba(255,60,60,0.7)] hover:brightness-110 active:scale-[0.98]`;
+
+const btnGhost = `${btnBase} border border-white/10 bg-white/[0.04] text-white/90 backdrop-blur hover:border-[#ff4d4d]/40 hover:bg-white/[0.08] hover:text-white active:scale-[0.98]`;
+
+const sectionTitle =
+  "text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl";
+
+const cardBase =
+  "group rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#ff4d4d]/30 hover:bg-white/[0.05] hover:shadow-[0_20px_50px_-20px_rgba(220,38,38,0.35)]";
+
+const features = [
+  {
+    icon: ShieldCheck,
+    title: "Moderation & Server Security",
+    body: "Automod filters, raid protection, warning trails and escalation actions that keep your community safe around the clock.",
+  },
+  {
+    icon: BadgeCheck,
+    title: "Welcome & Verification",
+    body: "Greet new members with custom welcome cards and gate your server behind verification rules you fully control.",
+  },
+  {
+    icon: Tags,
+    title: "Auto Roles & Reaction Roles",
+    body: "Assign roles automatically on join, or let members pick their own through clean reaction role menus.",
+  },
+  {
+    icon: Ticket,
+    title: "Ticket Management",
+    body: "Private support threads with transcripts, claiming and staff categories — support without the chaos.",
+  },
+  {
+    icon: Trophy,
+    title: "Leveling & Engagement",
+    body: "XP, ranks, role rewards and leaderboards that keep members active and coming back for more.",
+  },
+  {
+    icon: ScrollText,
+    title: "Server Logs & Activity",
+    body: "Every join, delete, ban and role change captured in organized, searchable, easy-to-audit logs.",
+  },
+] as const;
+
+const modules = [
+  { icon: ShieldCheck, name: "Moderation", note: "Warnings · mutes · bans · automod" },
+  { icon: BadgeCheck, name: "Welcome & Verification", note: "Greeting cards · gatekeeper" },
+  { icon: Tags, name: "Reaction Roles", note: "Self-roles · auto roles on join" },
+  { icon: Ticket, name: "Tickets", note: "Transcripts · staff claiming" },
+  { icon: Trophy, name: "Leveling", note: "XP · rank cards · rewards" },
+  { icon: ScrollText, name: "Logging", note: "Message · member · mod logs" },
+] as const;
+
+const feed = [
+  { icon: ShieldCheck, tone: "text-[#ff5c5c]", text: "Raid filter triggered in #general", time: "2m ago" },
+  { icon: Users, tone: "text-[#8b93a7]", text: "Member joined — verification sent", time: "6m ago" },
+  { icon: Ticket, tone: "text-[#ff8a4c]", text: "Ticket #214 claimed by @moderator", time: "14m ago" },
+  { icon: Trophy, tone: "text-[#ffd166]", text: "@ember reached Level 25", time: "31m ago" },
+] as const;
+
+/* ==========================================================================
+   Small building blocks
+   ========================================================================== */
+
+function LogoMark({ size = 40 }: { size?: number }) {
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-200 selection:bg-red-500/30 font-sans overflow-x-hidden">
-      {/* Dynamic Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-red-500/[0.03] blur-[150px] rounded-full animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-red-600/[0.03] blur-[150px] rounded-full animate-pulse [animation-delay:2s]" />
-      </div>
+    <span
+      className="relative inline-flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff3b3b] via-[#d61f2b] to-[#5c0a0a] shadow-[0_8px_24px_-6px_rgba(255,50,50,0.6)]"
+      style={{ width: size, height: size }}
+    >
+      <Shield className="text-white" style={{ width: size * 0.55, height: size * 0.55 }} strokeWidth={2.2} />
+    </span>
+  );
+}
 
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 border-b border-white/[0.03] bg-[#020617]/80 backdrop-blur-3xl transition-all duration-500">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4 group cursor-pointer">
-            <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-red-500 to-red-800 flex items-center justify-center shadow-lg shadow-red-500/25 border border-white/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
-              <Bot className="h-6 w-6 text-white" />
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-lg font-bold tracking-tight text-white font-outfit leading-none">{process.env.NEXT_PUBLIC_BRAND_NAME || "VayuX"}</h1>
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500/80 mt-1">Dashboard</span>
-            </div>
-          </div>
+function Brand({ compact = false }: { compact?: boolean }) {
+  return (
+    <span className="flex items-center gap-3">
+      <LogoMark size={compact ? 36 : 40} />
+      <span className="flex flex-col leading-tight">
+        <span className="text-lg font-extrabold tracking-tight text-white">
+          Vayu<span className="text-[#ff4d4d]">X</span>
+        </span>
+        <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/40">
+          Discord Bot Dashboard
+        </span>
+      </span>
+    </span>
+  );
+}
 
-          <div className="hidden lg:flex items-center gap-10 text-[11px] font-black uppercase tracking-widest text-slate-500">
-            <Link href="#features" className="hover:text-red-500 transition-colors">Features</Link>
-            <Link href="#architecture" className="hover:text-red-500 transition-colors">Architecture</Link>
-            <Link href="#modules" className="hover:text-red-500 transition-colors">Modules</Link>
-            <Link href="#network" className="hover:text-red-500 transition-colors">Network</Link>
-          </div>
+function LoginButton({ className }: { className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={() => signIn("discord", { callbackUrl: "/dashboard" })}
+      className={className ?? `${btnPrimary} h-12 px-6 text-sm`}
+    >
+      <LogIn className="h-4 w-4" />
+      Login with Discord
+    </button>
+  );
+}
 
-          <div className="flex items-center gap-4">
-            <Button 
-              onClick={() => signIn('discord', { callbackUrl: '/dashboard' })}
-              className="rounded-xl px-7 h-11 font-black uppercase tracking-widest text-[10px] gap-2.5 shadow-2xl shadow-red-500/20 hover:scale-[1.05] active:scale-95 transition-all bg-gradient-to-r from-red-500 to-red-700 border-none"
-            >
-              <LogIn className="h-3.5 w-3.5" />
-              Initialize Console
-            </Button>
+function AddBotButton({ className, label = "Add VayuX to Discord" }: { className?: string; label?: string }) {
+  if (botInviteUrl) {
+    return (
+      <a
+        href={botInviteUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={className ?? `${btnPrimary} h-12 px-6 text-sm`}
+      >
+        <ExternalLink className="h-4 w-4" />
+        {label}
+      </a>
+    );
+  }
+  return (
+    <button
+      type="button"
+      disabled
+      title="Set DISCORD_BOT_CLIENT_ID in app/page.tsx to enable this button."
+      className={`${className ?? `${btnPrimary} h-12 px-6 text-sm`} cursor-not-allowed opacity-50`}
+    >
+      <ExternalLink className="h-4 w-4" />
+      {label}
+    </button>
+  );
+}
+
+function DocLink({ href, label }: { href: string; label: string }) {
+  if (!href) {
+    return (
+      <span
+        title="Add your real URL in the DOCS_URL / SUPPORT_URL constants in app/page.tsx."
+        className="cursor-not-allowed text-sm font-medium text-white/30"
+      >
+        {label}
+      </span>
+    );
+  }
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-white/60 transition-colors hover:text-[#ff6b6b]">
+      {label}
+    </a>
+  );
+}
+
+function DashboardPreview() {
+  return (
+    <div className="relative">
+      <div aria-hidden className="absolute -inset-8 rounded-[2rem] bg-[#d61f2b]/15 blur-3xl" />
+      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0a0d15]/90 shadow-[0_40px_80px_-30px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+        {/* Window bar */}
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
+          <div className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
           </div>
+          <span className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] text-white/40">
+            app.vayux.xyz/dashboard
+          </span>
+          <span className="rounded-md border border-[#ff4d4d]/25 bg-[#ff4d4d]/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#ff8a8a]">
+            Sample data
+          </span>
         </div>
-      </nav>
 
-      {/* Hero Section */}
-      <header className="relative z-10 pt-56 pb-32 px-6">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-2xl bg-red-500/[0.03] border border-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-[0.3em] mb-16 animate-in fade-in slide-in-from-bottom-8 duration-1000 backdrop-blur-md">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
-            </span>
-            Neural Core v2 Active • Global Shard 07
-          </div>
-          
-          <h1 className="text-6xl sm:text-8xl md:text-[10rem] font-bold text-white tracking-tighter leading-[0.8] mb-12 font-outfit animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-100 uppercase">
-            Evolution <br />
-            <span className="bg-gradient-to-r from-red-500 via-red-400 to-orange-500 bg-clip-text text-transparent italic font-black">Moderated.</span>
-          </h1>
-
-          <p className="text-lg md:text-2xl text-slate-500 max-w-3xl mx-auto leading-relaxed mb-20 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-200 font-medium">
-            The hyper-performance Discord engine. 
-            Automated security, cinematic leveling, and precision tools for the world&apos;s most elite communities.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-300">
-            <Button 
-              onClick={() => signIn('discord', { callbackUrl: '/dashboard' })}
-              className="w-full sm:w-auto rounded-2xl px-14 py-9 text-lg font-black uppercase gap-4 group shadow-[0_0_50px_rgba(239,68,68,0.2)] bg-red-600 text-white hover:bg-red-500 border-none transition-all hover:scale-105"
-            >
-              <LayoutDashboard className="h-6 w-6 group-hover:rotate-12 transition-transform" />
-              Open Dashboard
-            </Button>
-            <Button variant="outline" className="w-full sm:w-auto rounded-2xl px-14 py-9 text-lg font-bold border-white/5 bg-white/[0.02] backdrop-blur-3xl hover:bg-white/[0.05] gap-3 text-white transition-all">
-              Add to Server
-              <ChevronRight className="h-5 w-5 opacity-40 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Cinematic Dashboard Mockup */}
-        <div className="max-w-6xl mx-auto mt-40 relative group animate-in fade-in zoom-in-95 duration-1000 delay-500">
-           <div className="absolute -inset-4 bg-gradient-to-r from-red-500/20 to-transparent rounded-[60px] blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-           <div className="relative bg-[#020617] border border-white/[0.05] rounded-[50px] overflow-hidden shadow-[0_30px_100px_rgba(0,0,0,0.8)]">
-              {/* Fake Window Controls */}
-              <div className="h-16 border-b border-white/[0.03] flex items-center justify-between px-10 bg-white/[0.01]">
-                <div className="flex items-center gap-3">
-                  <div className="h-3 w-3 rounded-full bg-red-500/40" />
-                  <div className="h-3 w-3 rounded-full bg-white/10" />
-                  <div className="h-3 w-3 rounded-full bg-white/5" />
-                </div>
-                <div className="px-6 py-2 rounded-2xl bg-white/[0.03] border border-white/[0.05] text-[10px] font-black text-slate-500 tracking-[0.2em] uppercase">
-                   sec.neural.core // active_node_01
-                </div>
-                <div className="w-12" />
-              </div>
-              {/* Content Placeholder with High Contrast */}
-              <div className="aspect-[16/10] p-16 flex flex-col gap-16 relative overflow-hidden bg-gradient-to-br from-[#020617] to-[#0a0f1e]">
-                <div className="flex items-center justify-between z-10 relative">
-                  <div className="space-y-6">
-                    <div className="h-12 w-64 bg-red-500/10 rounded-[20px] border border-red-500/20" />
-                    <div className="h-6 w-[500px] bg-white/[0.02] rounded-xl" />
-                  </div>
-                  <div className="h-20 w-20 rounded-[30px] bg-red-500/10 border border-red-500/20 flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.2)]">
-                    <Activity className="h-8 w-8 text-red-500 animate-pulse" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-10 z-10">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="h-40 bg-white/[0.02] border border-white/[0.04] rounded-[40px] p-8 space-y-6 hover:border-red-500/20 transition-colors">
-                      <div className="h-10 w-10 rounded-2xl bg-red-500/10 border border-red-500/20" />
-                      <div className="h-4 w-2/3 bg-white/5 rounded-lg" />
-                      <div className="h-3 w-1/2 bg-white/[0.02] rounded-lg" />
-                    </div>
-                  ))}
-                </div>
-                {/* Visual Glow Layer */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] h-[90%] bg-red-500/[0.02] blur-[150px] pointer-events-none" />
-              </div>
-           </div>
-        </div>
-      </header>
-
-      {/* Grid Section */}
-      <section id="features" className="py-48 px-6 relative">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-32 gap-12 px-4">
-            <div className="max-w-3xl">
-              <h2 className="text-6xl md:text-8xl font-bold text-white tracking-tighter font-outfit mb-8 uppercase italic leading-none">High-Scale <br /><span className="text-red-500 not-italic">Infrastructure.</span></h2>
-              <p className="text-2xl text-slate-500 font-medium leading-relaxed">Global redundancy delivers sub-millisecond dispatch times across 20+ edge regions. Zero lag, zero downtime.</p>
+        <div className="flex">
+          {/* Sidebar */}
+          <div className="hidden w-44 shrink-0 border-r border-white/[0.06] p-4 sm:block">
+            <div className="mb-4 flex items-center gap-2">
+              <LogoMark size={26} />
+              <span className="text-sm font-bold text-white">VayuX</span>
             </div>
-            <div className="flex items-center gap-10 pb-4">
-               <div className="text-right">
-                 <p className="text-[10px] font-black uppercase text-slate-600 tracking-[0.3em] mb-3">Ping Latency</p>
-                 <p className="text-5xl font-black text-red-500 font-outfit">12ms</p>
-               </div>
-               <div className="h-16 w-[1px] bg-white/5" />
-               <div className="text-right">
-                 <p className="text-[10px] font-black uppercase text-slate-600 tracking-[0.3em] mb-3">Global Uptime</p>
-                 <p className="text-5xl font-black text-white font-outfit">99.9<span className="text-slate-700">9</span>%</p>
-               </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              { 
-                title: "Neuro-Security", 
-                desc: "Contextual AI analysis detects raids and token-logging attempts in real-time.", 
-                icon: ShieldCheck,
-                color: "bg-red-500/10 border-red-500/20 text-red-500"
-              },
-              { 
-                title: "Edge Dispatch", 
-                desc: "Distributed command execution ensuring your commands work everywhere, instantly.", 
-                icon: Zap,
-                color: "bg-orange-500/10 border-orange-500/20 text-orange-500"
-              },
-              { 
-                title: "Leveling Engine", 
-                desc: "Premium rendered rewards with 4K rank card generation and multi-role hierarchies.", 
-                icon: BarChart4,
-                color: "bg-red-600/10 border-red-600/20 text-red-600"
-              },
-              { 
-                title: "Threaded Support", 
-                desc: "High-volume ticket systems with enterprise encryption and lifetime transcripts.", 
-                icon: MessageSquare,
-                color: "bg-slate-500/10 border-slate-500/20 text-slate-400"
-              },
-              { 
-                title: "Real-time Flux", 
-                desc: "Watch server events live with zero-latency WebSocket data streaming.", 
-                icon: History,
-                color: "bg-red-800/10 border-red-800/20 text-red-700"
-              },
-              { 
-                title: "Cloud Integrity", 
-                desc: "Encrypted backups of all server configurations stored in off-site neural vaults.", 
-                icon: Layers,
-                color: "bg-white/10 border-white/20 text-white"
-              }
-            ].map((feature, i) => (
-              <div key={i} className="group glass border-white/5 p-12 rounded-[50px] hover:border-red-500/30 transition-all duration-700 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-12 opacity-0 group-hover:opacity-5 scale-50 group-hover:scale-110 transition-all duration-1000">
-                  <feature.icon className="h-64 w-64 text-white" />
-                </div>
-                <div className={cn("h-20 w-20 rounded-3xl flex items-center justify-center mb-10 border transition-all duration-700 group-hover:scale-110 group-hover:rotate-6 shadow-2xl shadow-black/40", feature.color)}>
-                  <feature.icon className="h-10 w-10 shadow-lg" />
-                </div>
-                <h3 className="text-3xl font-bold text-white mb-6 tracking-tight font-outfit relative z-10">{feature.title}</h3>
-                <p className="text-slate-500 leading-relaxed font-bold relative z-10 group-hover:text-slate-400 transition-colors uppercase text-[10px] tracking-[0.2em]">{feature.desc}</p>
-                <div className="mt-8 h-[2px] w-0 bg-red-500 group-hover:w-full transition-all duration-700" />
+            {["Overview", "Moderation", "Tickets", "Leveling", "Logs"].map((item, i) => (
+              <div
+                key={item}
+                className={`mb-1 flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${
+                  i === 0
+                    ? "bg-gradient-to-r from-[#d61f2b]/25 to-transparent font-semibold text-white"
+                    : "text-white/40"
+                }`}
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${i === 0 ? "bg-[#ff4d4d]" : "bg-white/20"}`} />
+                {item}
               </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* Architecture Section */}
-      <section id="architecture" className="py-48 px-6 bg-white/[0.01]">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
-           <div className="space-y-12">
-              <div className="inline-flex px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-[0.3em]">
-                 The Stack
+          {/* Main panel */}
+          <div className="min-w-0 flex-1 p-4 sm:p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-white">Overview</p>
+                <p className="text-[11px] text-white/40">Your server at a glance</p>
               </div>
-              <h2 className="text-6xl md:text-7xl font-bold text-white tracking-tighter font-outfit uppercase">Neural Core <br /><span className="text-slate-600 italic">Technology.</span></h2>
-              <p className="text-xl text-slate-500 leading-relaxed font-medium">
-                Our proprietary engine is built on a custom Rust-based microkernel that handles millions of events with a footprint smaller than a typical Discord bot.
+              <div className="flex items-center gap-2">
+                <Bell className="h-4 w-4 text-white/30" />
+                <Settings className="h-4 w-4 text-white/30" />
+              </div>
+            </div>
+
+            {/* Stat tiles — illustrative sample data, not live metrics */}
+            <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
+              {[
+                { label: "Members", value: "12,482", icon: Users },
+                { label: "Active now", value: "318", icon: Zap },
+                { label: "Open tickets", value: "6", icon: Ticket },
+              ].map((stat) => (
+                <div key={stat.label} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+                  <stat.icon className="mb-2 h-3.5 w-3.5 text-[#ff6b6b]" />
+                  <p className="text-base font-bold text-white sm:text-lg">{stat.value}</p>
+                  <p className="text-[10px] text-white/40">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Activity feed */}
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+              <p className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-white/40">
+                <Activity className="h-3.5 w-3.5 text-[#ff6b6b]" />
+                Moderation feed
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-8">
-                 {[
-                   { icon: Terminal, title: "Custom DSL", desc: "Write advanced logic with our intuitive VayuX scripting language." },
-                   { icon: Cpu, title: "FPGA Ready", desc: "Hardware-accelerated pattern matching for instant response." },
-                   { icon: Lock, title: "Zero Trust", desc: "Every command execution is sandboxed and cryptographically verified." },
-                   { icon: Radio, title: "Low Entropy", desc: "Optimized for minimal CPU jitter and maximum reliability." }
-                 ].map((item, i) => (
-                   <div key={i} className="space-y-4 p-6 rounded-[30px] border border-white/[0.03] hover:bg-white/[0.02] transition-colors">
-                      <item.icon className="h-6 w-6 text-red-500" />
-                      <h4 className="text-lg font-bold text-white font-outfit uppercase tracking-tight">{item.title}</h4>
-                      <p className="text-sm text-slate-600 font-bold leading-relaxed">{item.desc}</p>
-                   </div>
-                 ))}
-              </div>
-           </div>
-           <div className="relative aspect-square flex items-center justify-center group">
-              <div className="absolute inset-0 bg-red-500/5 blur-[120px] rounded-full animate-pulse" />
-              <div className="h-[80%] w-[80%] border-2 border-white/[0.05] rounded-full animate-[spin_60s_linear_infinite] flex items-center justify-center relative">
-                 <div className="absolute top-0 left-1/2 -translate-x-1/2 h-4 w-4 rounded-full bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]" />
-                 <div className="h-[70%] w-[70%] border border-white/[0.05] rounded-full animate-[spin_40s_linear_infinite_reverse] flex items-center justify-center">
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-3 w-3 rounded-full bg-white/20 shadow-[0_0_20px_rgba(255,255,255,0.2)]" />
-                    <div className="h-[60%] w-[60%] border border-white/[0.05] rounded-full animate-[spin_20s_linear_infinite] flex items-center justify-center">
-                       <Bot className="h-20 w-20 text-red-500/40 group-hover:text-red-500 transition-all duration-700 group-hover:scale-125" />
-                    </div>
-                 </div>
-              </div>
-           </div>
-        </div>
-      </section>
-
-      {/* Modules Grid */}
-      <section id="modules" className="py-48 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-32 space-y-6">
-             <h2 className="text-6xl md:text-8xl font-bold text-white tracking-tighter font-outfit uppercase">The Matrix <br /><span className="bg-gradient-to-r from-red-600 to-red-400 bg-clip-text text-transparent italic">Complete.</span></h2>
-             <p className="text-2xl text-slate-500 max-w-3xl mx-auto font-medium lowercase">Every module you need. Redefined for the modern era.</p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {[
-              { name: "Anti-Nuke", desc: "Absolute server lockdown.", icon: ShieldAlert },
-              { name: "Verification", desc: "Bot-free onboarding.", icon: CheckCircle2 },
-              { name: "Welcome", desc: "Cinematic entries.", icon: Sparkles },
-              { name: "Vanity Roles", desc: "Custom server identity.", icon: Gamepad2 },
-              { name: "Auto Role", desc: "Instant rank assignment.", icon: User },
-              { name: "Join to Create", desc: "Self-service voice channels.", icon: Music4 },
-              { name: "Tracking", desc: "Predictive user metrics.", icon: Activity },
-              { name: "Invites", desc: "Advanced growth tracking.", icon: Globe },
-              { name: "Custom Roles", desc: "User-defined permissions.", icon: Lock },
-              { name: "Reaction Roles", desc: "Interactive role menus.", icon: Layers },
-              { name: "Tickets", desc: "Support at lightspeed.", icon: MessageSquare },
-              { name: "Join DM", desc: "Personalized welcomes.", icon: MessageSquare }
-            ].map((mod, i) => (
-              <div key={i} className="group p-8 rounded-[40px] bg-white/[0.01] border border-white/[0.03] hover:bg-red-500/[0.02] hover:border-red-500/20 transition-all duration-500">
-                 <div className="h-14 w-14 rounded-2xl bg-white/[0.03] flex items-center justify-center mb-6 group-hover:bg-red-500/10 transition-colors">
-                    <mod.icon className="h-6 w-6 text-slate-600 group-hover:text-red-500 transition-colors" />
-                 </div>
-                 <h4 className="text-xl font-bold text-white font-outfit mb-2 tracking-tight">{mod.name}</h4>
-                 <p className="text-xs text-slate-600 font-bold uppercase tracking-widest">{mod.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Network / Global Section */}
-      <section id="network" className="py-48 px-6 bg-red-600/[0.01] relative overflow-hidden">
-        <div className="max-w-7xl mx-auto relative z-10">
-           <div className="flex flex-col lg:flex-row items-center gap-24">
-              <div className="flex-1 space-y-12">
-                 <h2 className="text-6xl md:text-8xl font-bold text-white tracking-tighter font-outfit uppercase">Global <br /><span className="text-red-500">Reach.</span></h2>
-                  <p className="text-2xl text-slate-500 leading-relaxed font-medium">
-                    Powering servers with over 12 million combined users. Our network spans every continent, bringing your community closer together.
-                  </p>
-                 <div className="space-y-8">
-                    {[
-                      { stat: "12M+", label: "Users Protected" },
-                      { stat: "24", label: "Edge Clusters" },
-                      { stat: "5.2K", label: "Verified Communities" }
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center gap-8">
-                         <div className="text-5xl font-black text-white font-outfit">{item.stat}</div>
-                         <div className="h-[1px] flex-1 bg-white/5" />
-                         <div className="text-[11px] font-black uppercase text-red-500 tracking-[0.3em]">{item.label}</div>
-                      </div>
-                    ))}
-                 </div>
-              </div>
-              <div className="flex-1 relative group">
-                 <div className="absolute inset-0 bg-red-500/10 blur-[150px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-                 <div className="aspect-square bg-[#020617] border border-white/[0.05] rounded-[60px] p-12 relative overflow-hidden flex items-center justify-center">
-                    <Globe className="h-64 w-64 text-red-500/10 animate-pulse" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                       <div className="h-32 w-32 bg-red-500/20 blur-[60px] rounded-full" />
-                    </div>
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 space-y-12">
-                       <Bot className="h-20 w-20 text-red-500 shadow-[0_0_50px_rgba(239,68,68,0.5)] bg-[#020617] rounded-3xl p-4 border border-red-500/50" />
-                    </div>
-                 </div>
-              </div>
-           </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="py-48 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-24">
-             <h2 className="text-5xl md:text-6xl font-black text-white font-outfit tracking-tighter uppercase mb-6">Knowledge Base</h2>
-             <p className="text-slate-600 font-bold uppercase tracking-widest text-xs">Frequently Asked Questions</p>
-          </div>
-          <div className="space-y-6">
-            {[
-              { q: "Is the VayuX Engine free to use?", a: "The core engine is 100% free for all communities. We offer premium clusters for ultra-high-scale enterprise servers." },
-              { q: "How secure is my server data?", a: "Every byte of configuration data is AES-256 encrypted at rest. We never store personal user data beyond Discord's standard requirements." },
-              { q: "Can I migrate from other bots?", a: "Yes, our Migration Matrix tool allows you to import leveling and configuration data from most popular bots in minutes." },
-              { q: "What is the 'Neural Core'?", a: "It's our advanced event-processing architecture that uses predictive analysis to moderate raids before they escalate." }
-            ].map((item, i) => (
-              <div key={i} className="p-10 rounded-[40px] border border-white/[0.03] hover:border-white/10 transition-all bg-white/[0.01] group">
-                 <h4 className="text-xl font-bold text-white mb-6 font-outfit uppercase tracking-tight flex items-center gap-4">
-                    <div className="h-2 w-2 rounded-full bg-red-500 opacity-20 group-hover:opacity-100 transition-all" />
-                    {item.q}
-                 </h4>
-                 <p className="text-slate-500 font-bold leading-relaxed">{item.a}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-48 px-6">
-        <div className="max-w-6xl mx-auto relative rounded-[80px] p-24 md:p-32 overflow-hidden bg-gradient-to-br from-red-600 to-red-900 text-center shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
-           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
-           <div className="relative z-10">
-              <h2 className="text-7xl md:text-[9rem] font-bold text-white tracking-tighter font-outfit mb-12 uppercase leading-[0.8] italic">Ready to <br />Evolve?</h2>
-              <p className="text-2xl text-white/70 max-w-3xl mx-auto mb-20 font-medium">Join 5,000+ communities scaling their automation with the VayuX Engine. Setup takes less than 30 seconds.</p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-8 tracking-widest uppercase text-xs font-black">
-                <Button 
-                  onClick={() => signIn('discord', { callbackUrl: '/dashboard' })}
-                  className="w-full sm:w-auto rounded-3xl px-16 py-10 bg-white text-black hover:bg-slate-100 border-none shadow-[0_20px_50px_rgba(0,0,0,0.4)] font-black text-lg transition-transform hover:scale-105 active:scale-95"
-                >
-                  Get Started Free
-                </Button>
-                <div className="flex items-center gap-3 text-white">
-                   <div className="h-3 w-3 rounded-full bg-white animate-pulse" />
-                   Neural Uplink: Stable
+              {feed.map((row) => (
+                <div key={row.text} className="flex items-center gap-2.5 border-t border-white/[0.04] py-2 first:border-t-0">
+                  <row.icon className={`h-3.5 w-3.5 shrink-0 ${row.tone}`} />
+                  <p className="min-w-0 flex-1 truncate text-xs text-white/70">{row.text}</p>
+                  <span className="shrink-0 text-[10px] text-white/30">{row.time}</span>
                 </div>
-              </div>
-           </div>
-        </div>
-      </section>
+              ))}
+            </div>
 
-      {/* Footer */}
-      <footer className="py-32 border-t border-white/[0.03] bg-[#020617] relative z-20">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-20 mb-32">
-            <div className="col-span-1 md:col-span-2 space-y-12">
-              <div className="flex items-center gap-4 group">
-                <span className="text-3xl font-bold text-white font-outfit uppercase tracking-tighter">{process.env.NEXT_PUBLIC_BRAND_NAME || "VayuX"} Engine</span>
-              </div>
-              <p className="text-slate-600 max-w-sm font-bold leading-relaxed uppercase text-xs tracking-widest">
-                The high-performance Discord engine for communities that demand excellence. Open-source, secure, and infinitely scalable.
-              </p>
-            </div>
-            <div className="space-y-8">
-               <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-white opacity-40">System</h4>
-               <ul className="space-y-5 text-[11px] font-black uppercase tracking-widest text-slate-500">
-                  <li><Link href="#" className="hover:text-red-500 transition-colors">GitHub Repository</Link></li>
-                  <li><Link href="/docs" className="hover:text-red-500 transition-colors">Documentation</Link></li>
-                  <li><Link href="#" className="hover:text-red-500 transition-colors">API References</Link></li>
-               </ul>
-            </div>
-            <div className="space-y-8">
-               <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-white opacity-40">Identity</h4>
-               <ul className="space-y-5 text-[11px] font-black uppercase tracking-widest text-slate-500">
-                  <li><Link href="/privacy" className="hover:text-red-500 transition-colors">Privacy Shield</Link></li>
-                  <li><Link href="/terms" className="hover:text-red-500 transition-colors">Terms of Service</Link></li>
-                  <li><Link href="#" className="hover:text-red-500 transition-colors">Discord Server</Link></li>
-               </ul>
-            </div>
-          </div>
-          <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 opacity-40">
-            <p className="text-slate-700 text-[10px] font-black uppercase tracking-[0.4em]">
-              © 2026 {process.env.NEXT_PUBLIC_BRAND_NAME || "VayuX"} Development // Advanced Neural Infrastructure.
+            <p className="mt-3 text-center text-[10px] text-white/25">
+              Illustrative preview — sample data, not live metrics.
             </p>
-            <div className="flex items-center gap-8">
-               <div className="flex items-center gap-3 text-[10px] font-black text-red-500 uppercase tracking-[0.3em]">
-                  <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                  All Nodes Operational
-               </div>
-            </div>
           </div>
         </div>
-      </footer>
+      </div>
     </div>
   );
 }
+
+/* ==========================================================================
+   Page
+   ========================================================================== */
+
+// NOTE: keep your existing default export name if it differs from `Page`.
+export default function Page() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const navItems = (
+    <>
+      <a href="#features" className="text-sm font-medium text-white/60 transition-colors hover:text-[#ff6b6b]">
+        Features
+      </a>
+      <a href="#modules" className="text-sm font-medium text-white/60 transition-colors hover:text-[#ff6b6b]">
+        Modules
+      </a>
+      <DocLink href={DOCS_URL} label="Documentation" />
+      <DocLink href={SUPPORT_URL} label="Support" />
+    </>
+  );
+
+  return (
+    <main className="min-h-screen overflow-x-hidden bg-[#05060a] text-white antialiased selection:bg-[#d61f2b]/60">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes vx-fade-up { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes vx-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes vx-glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.85; } }
+        .vx-fade-up { animation: vx-fade-up 0.7s ease-out both; }
+        .vx-float { animation: vx-float 7s ease-in-out infinite; }
+        .vx-glow { animation: vx-glow 5s ease-in-out infinite; }
+      ` }} />
+
+      {/* ================= NAVBAR ================= */}
+      <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#05060a]/75 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <a href="#" aria-label="VayuX home" className="flex items-center">
+            <Brand compact />
+          </a>
+
+          <nav className="hidden items-center gap-8 md:flex">{navItems}</nav>
+
+          <div className="hidden items-center gap-3 md:flex">
+            <LoginButton className={`${btnGhost} h-10 px-4 text-sm`} />
+            <AddBotButton className={`${btnPrimary} h-10 px-4 text-sm`} label="Add Bot" />
+          </div>
+
+          <button
+            type="button"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            onClick={() => setMenuOpen((open) => !open)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-white/80 md:hidden"
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
+
+        {/* Mobile menu */}
+        {menuOpen && (
+          <div className="border-t border-white/[0.06] bg-[#05060a]/95 px-4 pb-6 pt-4 backdrop-blur-xl md:hidden">
+            <nav className="flex flex-col gap-4">{navItems}</nav>
+            <div className="mt-6 flex flex-col gap-3">
+              <LoginButton className={`${btnGhost} h-11 w-full text-sm`} />
+              <AddBotButton className={`${btnPrimary} h-11 w-full text-sm`} />
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* ================= HERO ================= */}
+      <section className="relative">
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="vx-glow absolute -top-48 left-1/2 h-[520px] w-[860px] -translate-x-1/2 rounded-full bg-[#e11d2e]/20 blur-[140px]" />
+          <div className="vx-float absolute -right-32 top-64 h-[380px] w-[380px] rounded-full bg-[#7f1020]/25 blur-[120px]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.04),transparent_55%)]" />
+        </div>
+
+        <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-4 pb-20 pt-16 sm:px-6 md:pt-24 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:px-8 lg:pb-28">
+          <div>
+            <div className="vx-fade-up mb-6 inline-flex items-center gap-2 rounded-full border border-[#ff4d4d]/25 bg-[#d61f2b]/10 px-4 py-1.5 text-xs font-medium text-[#ff8a8a]">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#ff4d4d]" />
+              Built for serious Discord communities
+            </div>
+
+            <h1 className="vx-fade-up text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl" style={{ animationDelay: "80ms" }}>
+              Your Server.
+              <br />
+              Your Rules.
+              <br />
+              <span className="bg-gradient-to-r from-[#ff5c5c] via-[#e11d2e] to-[#8a0f1c] bg-clip-text text-transparent">
+                VayuX.
+              </span>
+            </h1>
+
+            <p className="vx-fade-up mt-6 max-w-xl text-base leading-relaxed text-white/55 sm:text-lg" style={{ animationDelay: "160ms" }}>
+              VayuX gives Discord server owners one clean dashboard for
+              moderation, automation, community engagement and everyday server
+              tools — so your community runs itself while you stay in control.
+            </p>
+
+            <div className="vx-fade-up mt-9 flex flex-col gap-3 sm:flex-row" style={{ animationDelay: "240ms" }}>
+              <LoginButton className={`${btnPrimary} h-14 px-8 text-base`} />
+              <AddBotButton className={`${btnGhost} h-14 px-8 text-base`} />
+            </div>
+
+            <p className="vx-fade-up mt-5 flex items-center gap-2 text-xs text-white/35" style={{ animationDelay: "320ms" }}>
+              <Shield className="h-3.5 w-3.5 text-[#ff6b6b]" />
+              You approve every permission on Discord&apos;s own authorization screen.
+            </p>
+          </div>
+
+          <div className="vx-fade-up lg:justify-self-end" style={{ animationDelay: "200ms" }}>
+            <DashboardPreview />
+          </div>
+        </div>
+      </section>
+
+      {/* ================= FEATURES ================= */}
+      <section id="features" className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+        <div className="mb-14 max-w-2xl">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-[#ff6b6b]">Features</p>
+          <h2 className={sectionTitle}>Everything your server needs, in one place</h2>
+          <p className="mt-4 text-base text-white/50">
+            Each feature is designed to work together — configure them from the VayuX dashboard, no cluttered commands required.
+          </p>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature) => (
+            <article key={feature.title} className={cardBase}>
+              <span className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[#ff4d4d]/20 bg-gradient-to-br from-[#d61f2b]/20 to-transparent">
+                <feature.icon className="h-5 w-5 text-[#ff6b6b]" />
+              </span>
+              <h3 className="mb-2 text-lg font-semibold text-white">{feature.title}</h3>
+              <p className="text-sm leading-relaxed text-white/50">{feature.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* ================= MODULES ================= */}
+      <section id="modules" className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute left-1/2 top-1/3 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-[#8a0f1c]/10 blur-[130px]" />
+        </div>
+
+        <div className="relative grid gap-12 lg:grid-cols-[1fr_1.3fr] lg:items-center">
+          <div>
+            <p className="mb-3 text-xs font-semibold uppercas
