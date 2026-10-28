@@ -263,20 +263,15 @@ class Giveaway(commands.Cog):
             await message.delete()
             return
 
-        converted = self.convert(time)
-        if converted / 60 >= 50400:
-            message = await ctx.send(view=CV2("⚠️ Access Denied", "Time cannot exceed 31 days!"))
+        converted = convert(time)
+        if converted is None or converted <= 0:
+            message = await ctx.send(view=CV2("❌ Error", "Invalid time format. Example: `10m`, `2h`, `1d`"))
             await asyncio.sleep(5)
             await message.delete()
             return
 
-        if converted == -1:
-            message = await ctx.send(view=CV2("❌ Error", "Invalid time format"))
-            await asyncio.sleep(5)
-            await message.delete()
-            return
-        if converted is None:
-            message = await ctx.send(view=CV2("❌ Error", "Invalid time format"))
+        if converted / 60 >= 50400:
+            message = await ctx.send(view=CV2("⚠️ Access Denied", "Time cannot exceed 31 days!"))
             await asyncio.sleep(5)
             await message.delete()
             return

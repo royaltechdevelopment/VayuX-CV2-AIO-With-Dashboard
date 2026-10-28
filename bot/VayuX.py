@@ -131,7 +131,10 @@ async def on_command_completion(context: commands.Context) -> None:
     full_command_name = context.command.qualified_name
     split = full_command_name.split("\n")
     executed_command = str(split[0])
-    webhook_url = CMD_WEBHOOK_URL
+    webhook_url = (CMD_WEBHOOK_URL or "").strip()
+    if not webhook_url.startswith("https://discord.com/api/webhooks/") or webhook_url.rstrip("/").endswith("/webhooks"):
+        return
+
     async with aiohttp.ClientSession() as session:
         webhook = discord.Webhook.from_url(webhook_url, session=session)
 
